@@ -1040,9 +1040,19 @@ class Api extends Trongate {
 
     function _get_all_tables() {
         $tables = [];
-        $sql = 'show tables';
-        $column_name = 'Tables_in_'.DATABASE;
+        
+        // sqlite does not understand 'show tables' hence a different approach has to be taken to 
+        // discover the table names.
+
+        if (SQLITE == true) {
+            $sql = "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%'";
+            $column_name = 'name';
+        } else {
+            $sql = 'show tables';
+            $column_name = 'Tables_in_'.DATABASE;
+        }
         $rows = $this->model->query($sql, 'array');
+        
         foreach ($rows as $row) {
             $tables[] = $row[$column_name];
         }
@@ -1066,10 +1076,29 @@ class Api extends Trongate {
      function _get_all_columns($table) {
 
         $columns = [];
-        $sql = 'describe '.$table;
+
+        // sqlite does not understand 'describe table' hence a different approach has to be taken to 
+        // discover the column names.
+         
+        if (SQLITE == true) {
+            $sql = "SELECT sql FROM sqlite_master WHERE name = '" . $table . "'";
+        } else {
+            $sql = 'describe ' . $table;
+        }
         $rows = $this->model->query($sql, 'array');
-        foreach ($rows as $row) {
-            $columns[] = $row['Field'];
+
+        if (SQLITE == true) {
+            $str = implode('', $rows[0]);
+            $matches = null;
+            preg_match_all('/(".*")/U', $str, $matches);
+            $fieldcount = count($matches[0]);
+            for ($i=1; $i < $fieldcount; $i++) { 
+                $columns[] = substr($matches[0][$i], 1, -1);
+            }
+        } else {
+            foreach ($rows as $row) {
+                $columns[] = $row['Field'];
+            }
         }
 
         return $columns;   
