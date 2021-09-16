@@ -10,7 +10,10 @@ class Model {
     private $dbh;
     private $stmt;
     private $error;
-    private $debug = false;
+
+    // Constant DEBUG defined in config/database.php
+    private $debug = DEBUG;
+    
     private $query_caveat = 'The query shown above is how the query would look <i>before</i> binding.';
     private $current_module;
 
@@ -18,8 +21,16 @@ class Model {
 
         $this->port = (defined('PORT') ? PORT : '3306');
         $this->current_module = $current_module;
+        
+        // the following if/else statement allows for the DSN to have been defined in config/database.php
+        // NB: only MySQL and SQLite sql dialects have been catered for so far in Model.php and Api.php
 
-        $dsn = 'mysql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->dbname;
+        if (defined('DSN') && DSN <> '') {
+            $dsn = DSN;
+        } else {
+            $dsn = 'mysql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->dbname;
+        }
+
         $options = array(
             PDO::ATTR_PERSISTENT => true,
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
@@ -374,6 +385,24 @@ class Model {
             $caveat_info.= ' PDO currently has no means of displaying previous query executed.</div>';
         }
 
+        // the following if/else statement caters for debug information to be output to a simple text file
+        // according to the settings of constants DEBUG, DEBUG_TO_FILE and DEBUG_FILE_NAME in config/database.php
+        // Defining DEBUG_TO_FILE == true allows for an unadulterated screen output and a comprehensive review of
+        // database queries. It also opens the possibility for other debug information to be output and saved in
+        // the file for review later. 
+
+        if (DEBUG_TO_FILE == true) {
+            $debug_start = "********************************************************************************\n";
+            $debug_file = fopen(DEBUG_FILE_NAME, 'a') or die('Unable to open Debug file');
+            $debug_time = date('Y-m-d H:i:s');
+            $debug_text = $debug_start . $debug_time . ': QUERY TO BE EXECUTED -> ' .
+                "\n\n" . $query . "\n\n";
+            $debug_text = preg_replace('/[ ]{2,}/', ' ', $debug_text);
+
+            fwrite($debug_file, $debug_text);
+            fclose($debug_file);
+
+        } else {
         echo '<div class="tg-rprt"><b>QUERY TO BE EXECUTED:</b><br><br>  -> ';
         echo $query.$caveat_info.'</div>';
         ?>
@@ -387,11 +416,12 @@ padding: 1em;
 border: 1px #383623 solid;
 clear: both !important;
 margin: 1em 0;
-}    
+}        
 </style>
 
     <?php
     }
+}
 
     public function insert($data, $target_tbl=NULL) {
 
