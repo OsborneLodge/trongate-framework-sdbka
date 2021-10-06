@@ -15,8 +15,8 @@ class Trongate {
         $this->modules = new Modules;
 
         //load the helper classes
-        foreach (TRONGATE_HELPERS as $trongate_helper) {
-            require_once 'tg_helpers/'.$trongate_helper.'.php';
+        foreach (TRONGATE_HELPERS as $tg_helper) {
+            require_once 'tg_helpers/'.$tg_helper.'.php';
         }
 
         $this->validation_helper = new Validation_helper;
@@ -83,10 +83,16 @@ class Trongate {
             }
         }
 
+        if (!isset($child_module)) {
+            http_response_code(404);
+            echo 'ERROR: Unable to locate '.$target_module.' module!';
+            die();
+        }
+
         return $child_module;
     }
 
-    public function view($view, $data = [], $return_as_str=NULL) {
+    protected function view($view, $data = [], $return_as_str=NULL) {
 
         if ((isset($return_as_str)) || (gettype($data) == 'boolean')) {
             $return_as_str = true;

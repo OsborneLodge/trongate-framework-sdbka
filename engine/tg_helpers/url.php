@@ -1,11 +1,16 @@
 <?php
-function segment($num) {
+function segment($num, $var_type=null) {
     $segments = SEGMENTS;
     if (isset($segments[$num])) {
         $value = $segments[$num];
     } else {
         $value = '';
     }
+
+    if (isset($var_type)) {
+        settype($value, $var_type);
+    }
+    
     return $value;
 }
 
@@ -173,4 +178,12 @@ function make_rand_str($strlen, $uppercase=false) {
         $random_string = strtoupper($random_string);
     }
     return $random_string;
+}
+
+function json($data, $kill_script=null) {
+    echo '<pre>'.json_encode($data, JSON_PRETTY_PRINT).'</pre>';
+
+    if (isset($kill_script)) {
+        die();
+    }
 }
